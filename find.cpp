@@ -181,8 +181,18 @@ void get_first_arg(const std::string & path, char *arg_first) {
   substr(path, arg_first, !index ? 0 : index + 1, path.size());
 }
 
-bool execute_with_argv(const flags_wrapper &flags_wrp, const std::vector<std::string> &args_str) {
+void clean(char **arguments) {
+    size_t arg_size = sizeof(arguments) / sizeof (char *);
+    for (size_t i = 0; i < arg_size; ++i) {
+        if (arguments[i] != nullptr)
+            delete [] arguments[i];
+    }
+    delete [] arguments;
+}
+
+void execute_with_argv(const flags_wrapper &flags_wrp, const std::vector<std::string> &args_str) {
     char **arguments = new char *[args_str.size() + 2];
+
     get_first_arg(flags_wrp.get_exe_path(), arguments[0]);
 
     for (size_t i = 0; i < args_str.size(); ++i) {
@@ -192,6 +202,7 @@ bool execute_with_argv(const flags_wrapper &flags_wrp, const std::vector<std::st
     }
 
     arguments[args_str.size() + 1] = nullptr;
+
     pid_t pid = fork();
 
     if (pid == 0) {
@@ -199,10 +210,8 @@ bool execute_with_argv(const flags_wrapper &flags_wrp, const std::vector<std::st
         if (prog_stat < 0) {
             std::cout << "Can not execute " << flags_wrp.get_exe_path() << " \n";
         }
-        return false;
     } else if (pid == -1) {
         std::cout << "Can't create new process...\n";
-        return false;
     } else {
         int wstatus;
         if (wait(&wstatus) == -1) {
@@ -211,21 +220,14 @@ bool execute_with_argv(const flags_wrapper &flags_wrp, const std::vector<std::st
             if (WIFEXITED(wstatus)) {
                 std::cout << "Execution " << flags_wrp.get_exe_path() << " terminated normally\n"
                                                                          "Exit status " << wstatus << "\n" ;
-                return true;
             } else {
                 std::cout << "Error during termination...\n";
-                return false;
             }
         }
+
+        clean(arguments);
     }
 
-    size_t arg_size = sizeof(arguments) / sizeof (char *);
-    for (int i = 0; i < arg_size; ++i) {
-        delete [] arguments[i];
-    }
-    delete [] arguments;
-
-    return false;
 }
 
 void run(const char *path, const flags_wrapper &flags_wrp){
@@ -293,7 +295,7 @@ void run(const char *path, const flags_wrapper &flags_wrp){
     }
 
     if (exec) {
-        bool success = execute_with_argv(flags_wrp, argv);
+        execute_with_argv(flags_wrp, argv);
     }
 }
 
