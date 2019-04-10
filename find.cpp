@@ -181,15 +181,6 @@ void get_first_arg(const std::string & path, char *arg_first) {
   substr(path, arg_first, !index ? 0 : index + 1, path.size());
 }
 
-void clean(char **arguments) {
-    size_t arg_size = sizeof(arguments) / sizeof (char *);
-    for (size_t i = 0; i < arg_size; ++i) {
-        if (arguments[i] != nullptr)
-            delete [] arguments[i];
-    }
-    delete [] arguments;
-}
-
 void execute_with_argv(const flags_wrapper &flags_wrp, const std::vector<std::string> &args_str) {
     char **arguments = new char *[args_str.size() + 2];
 
@@ -225,7 +216,11 @@ void execute_with_argv(const flags_wrapper &flags_wrp, const std::vector<std::st
             }
         }
 
-        clean(arguments);
+        for (size_t i = 0; i <= args_str.size(); ++i) {
+            if (arguments[i] != nullptr)
+                delete [] arguments[i];
+        }
+        delete [] arguments;
     }
 
 }
