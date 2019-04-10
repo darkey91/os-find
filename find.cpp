@@ -94,9 +94,7 @@ public:
                     return -1;
             } else if (arg_name_hash == flags_hashes[1]) {
                 NAME = true;
-                name_ = new char[arg.size() + 1];
-                strcpy(name_, argv[i + 1]);
-                name_[arg.size()] = '\0';
+                name_ = argv[i + 1];
             } else if (arg_name_hash == flags_hashes[2]) {
                 SIZE = true;
                 size_sign = arg[0];
@@ -169,6 +167,7 @@ private:
 };
 
 void substr(const std::string &str, char *arg, size_t from, size_t to) {
+    arg = new char[to - from + 1];
     size_t index = 0;
     for (size_t i = from; i < to; ++i) {
         arg[index++] = str[i];
@@ -183,8 +182,7 @@ void get_first_arg(const std::string & path, char *arg_first) {
 }
 
 bool execute_with_argv(const flags_wrapper &flags_wrp, const std::vector<std::string> &args_str) {
-    char *arguments[args_str.size() + 2];
-
+    char **arguments = new char *[args_str.size() + 2];
     get_first_arg(flags_wrp.get_exe_path(), arguments[0]);
 
     for (size_t i = 0; i < args_str.size(); ++i) {
@@ -214,11 +212,19 @@ bool execute_with_argv(const flags_wrapper &flags_wrp, const std::vector<std::st
                 std::cout << "Execution " << flags_wrp.get_exe_path() << " terminated normally\n"
                                                                          "Exit status " << wstatus << "\n" ;
                 return true;
+            } else {
+                std::cout << "Error during termination...\n";
+                return false;
             }
-            std::cout << "Error during termination...\n";
-            return false;
         }
     }
+
+    size_t arg_size = sizeof(arguments) / sizeof (char *);
+    for (int i = 0; i < arg_size; ++i) {
+        delete [] arguments[i];
+    }
+    delete [] arguments;
+
     return false;
 }
 
