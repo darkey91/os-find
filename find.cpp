@@ -128,7 +128,7 @@ public:
                         break;
                     }
                     default: {
-                        std::cout << "Invalid size.Usage -size n[ckGM]\n";
+                        std::cerr << "Invalid size. Usage: -size n[ckGM]\n";
                         return -1;
                     }
                     }
@@ -199,20 +199,22 @@ void execute_with_argv(const flags_wrapper &flags_wrp, const std::vector<std::st
     if (pid == 0) {
         int prog_stat = execvp(flags_wrp.get_exe_path(), arguments);
         if (prog_stat < 0) {
-            std::cout << "Can not execute " << flags_wrp.get_exe_path() << " \n";
+            std::cerr << "Can not execute " << flags_wrp.get_exe_path() << " \n";
         }
     } else if (pid == -1) {
-        std::cout << "Can't create new process...\n";
+        std::cerr << "Can't create new process...\n";
     } else {
         int wstatus;
-        if (wait(&wstatus) == -1) {
-            std::cout << "Error during execution program...";
+        if (waitpid(pid, &wstatus, WUNTRACED) == -1) {
+
+            std::cerr << "Error during execution program...\n";
+
         } else {
             if (WIFEXITED(wstatus)) {
                 std::cout << "Execution " << flags_wrp.get_exe_path() << " terminated normally\n"
-                                                                         "Exit status " << wstatus << "\n" ;
+                                                                         "Exit status is " << WEXITSTATUS(wstatus) << "\n" ;
             } else {
-                std::cout << "Error during termination...\n";
+                std::cerr << "Error during termination of " << flags_wrp.get_exe_path() << " execution.\n";
             }
         }
 
@@ -243,13 +245,13 @@ void run(const char *path, const flags_wrapper &flags_wrp){
         int cur_fd = open(cur_path.c_str(), O_RDONLY, O_DIRECTORY);
 
         if (cur_fd == -1) {
-             std::cout << "Can't open directory " << cur_path << ". \n";
+             std::cerr << "Can't open directory " << cur_path << ". \n";
         } else {
             struct linux_dirent *dirent;
             while (true) {
                 int nread = syscall(SYS_getdents, cur_fd, buffer, BUF_SIZE);
                 if (nread == -1) {
-                    std::cout << "Can't get entry of directory " << cur_path << "\n";
+                    std::cerr << "Can't get entry of directory " << cur_path << "\n";
                     break;
                 }
                 if (!nread) break;
@@ -272,7 +274,7 @@ void run(const char *path, const flags_wrapper &flags_wrp){
                     //For symlink "find" will get inode for this symlink, but not for file this symlink links to.
                     int stat_status = stat(child_path.c_str(), &statbuf);
                     if (stat_status == -1) {
-                        std::cout << "Can't get information about file: " << child_path << ". \n";
+                        std::cerr << "Can't get information about file: " << child_path << ". \n";
                     } else {
                         if (flags_wrp.satisfied(dirent->d_ino, dirent->d_name, statbuf.st_size, statbuf.st_nlink) && strcmp(this_parent_dir, dirent->d_name) && strcmp(this_dir, dirent->d_name)) {
                             if (!exec) {
@@ -296,7 +298,7 @@ void run(const char *path, const flags_wrapper &flags_wrp){
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        std::cout << "Incorrect input. Usage: ./find <path_to_dir>";
+        std::cerr << "Incorrect input. Usage: ./find <path_to_dir>";
         return 0;
     }
     flags_wrapper flags;
@@ -305,7 +307,7 @@ int main(int argc, char *argv[]) {
     int status_flag = flags.set_flags(argc, argv);
 
     if (status_flag == -1) {
-        std::cout << "Wrong arguments. Supported arguments: [-name name] [-size [+=-]size[cbMKG] [-inum inode] [-exec path_to_exe_file] [-nlinks nlinks]";
+        std::cerr << "Wrong arguments. Supported arguments: [-name name] [-size [+=-]size[cbMKG] [-inum inode] [-exec path_to_exe_file] [-nlinks nlinks]";
         return 0;
     }
 
